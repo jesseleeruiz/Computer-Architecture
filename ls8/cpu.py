@@ -8,6 +8,8 @@ PRN = 0b01000111    # PRN
 MUL = 0b10100010    # MUL
 ADD = 0b10100000    # ADD
 SUB = 0b10100001    # SUB
+POP = 0b01000110
+PUSH = 0b01000101
 
 class CPU:
     """Main CPU class."""
@@ -19,6 +21,7 @@ class CPU:
         self.pc = pc
         self.running = running
         self.op_size = op_size
+        self.sp = 7
         self.branchtable = {}
         # self.branchtable[OP1] = self.handle_op1
         # self.branchtable[OP2] = self.handle_op2
@@ -73,8 +76,6 @@ class CPU:
         except FileNotFoundError:
             print(f"{sys.argv[0]}: {filename} not found.")
             sys.exit(2)
-
-
 
             # For now, we've just hardcoded a program:
             # program = [
@@ -149,6 +150,19 @@ class CPU:
             elif IR == SUB:
                 self.alu(IR, operand_a, operand_b)
                 self.op_size = 3
+            elif IR == POP:
+                val = self.ram[self.reg[self.sp]]
+                self.reg[operand_a] = val
+                self.reg[self.sp] += 1
+                self.op_size = 2
+            elif IR == PUSH:
+                val = self.reg[operand_a]
+                self.reg[self.sp] -= 1
+                self.ram[self.reg[self.sp]] = val
+                self.op_size = 2
+            else:
+                print(f"Invalid Instructions: {IR}")
+                self.running = False
 
             self.pc += self.op_size
 
