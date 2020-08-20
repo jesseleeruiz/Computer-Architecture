@@ -2,14 +2,20 @@
 
 import sys
 
-HLT = 0b00000001    # HLT
-LDI = 0b10000010    # LDI
-PRN = 0b01000111    # PRN
-MUL = 0b10100010    # MUL
-ADD = 0b10100000    # ADD
-SUB = 0b10100001    # SUB
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+MUL = 0b10100010
+ADD = 0b10100000
+SUB = 0b10100001
 POP = 0b01000110
 PUSH = 0b01000101
+CALL = 0b01010000
+RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 
 class CPU:
     """Main CPU class."""
@@ -22,31 +28,6 @@ class CPU:
         self.running = running
         self.op_size = op_size
         self.sp = 7
-        self.branchtable = {}
-        # self.branchtable[OP1] = self.handle_op1
-        # self.branchtable[OP2] = self.handle_op2
-        # self.branchtable[OP3] = self.handle_op3
-        # self.branchtable[OP4] = self.handle_op4
-        # self.branchtable[OP5] = self.handle_op5
-        # self.branchtable[OP6] = self.handle_op6
-
-    def handle_op1(self):
-        self.running = False
-
-    def handle_op2(self, a):
-        pass
-
-    def handle_op3(self, a):
-        pass
-
-    def handle_op4(self, a):
-        pass
-
-    def handle_op5(self, a):
-        pass
-
-    def handle_op6(self, a):
-        pass
 
     def ram_read(self, address_to_read):
         return self.ram[address_to_read]
@@ -76,22 +57,6 @@ class CPU:
         except FileNotFoundError:
             print(f"{sys.argv[0]}: {filename} not found.")
             sys.exit(2)
-
-            # For now, we've just hardcoded a program:
-            # program = [
-            #     # From print8.ls8
-            #     0b10000010, # LDI R0,8
-            #     0b00000000,
-            #     0b00001000,
-            #     0b01000111, # PRN R0
-            #     0b00000000,
-            #     0b00000001, # HLT
-            # ]
-
-            # for instruction in program:
-            #     self.ram[address] = instruction
-            #     address += 1
-
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -134,32 +99,54 @@ class CPU:
 
             if IR == HLT:
                 self.running = False
+
             elif IR == LDI:
                 self.reg[operand_a] = operand_b
                 self.op_size = 3
+
             elif IR == PRN:
                 num_at_reg = self.reg[operand_a]
                 print(num_at_reg)
                 self.op_size = 2
+
             elif IR == MUL:
                 self.alu(IR, operand_a, operand_b)
                 self.op_size = 3
+
             elif IR == ADD:
                 self.alu(IR, operand_a, operand_b)
                 self.op_size = 3
+
             elif IR == SUB:
                 self.alu(IR, operand_a, operand_b)
                 self.op_size = 3
+
             elif IR == POP:
                 val = self.ram[self.reg[self.sp]]
                 self.reg[operand_a] = val
                 self.reg[self.sp] += 1
                 self.op_size = 2
+
             elif IR == PUSH:
                 val = self.reg[operand_a]
                 self.reg[self.sp] -= 1
                 self.ram[self.reg[self.sp]] = val
                 self.op_size = 2
+
+            elif IR == CALL:
+                self.reg[self.sp] -= 1
+                self.ram[self.reg[self.sp]] = self.pc + 2
+
+                self.pc = self.reg[operand_a]
+
+                self.op_size = 0
+
+            elif IR == RET:
+                self.pc = self.ram[self.reg[self.sp]]
+                self.reg[self.sp] += 1
+
+                self.op_size = 0
+
             else:
                 print(f"Invalid Instructions: {IR}")
                 self.running = False
