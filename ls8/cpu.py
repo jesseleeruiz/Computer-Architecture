@@ -28,6 +28,7 @@ class CPU:
         self.running = running
         self.op_size = op_size
         self.sp = 7
+        self.fl = 0b00000000
 
     def ram_read(self, address_to_read):
         return self.ram[address_to_read]
@@ -67,6 +68,16 @@ class CPU:
             self.reg[reg_a] -= self.reg[reg_b]
         elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == CMP:
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 0b00000001
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.fl = 0b00000010
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = 0b00000100
+            else:
+                self.fl = 0b00000000
+                
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -78,7 +89,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -96,6 +107,7 @@ class CPU:
             IR = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
+            flag = self.fl
 
             if IR == HLT:
                 self.running = False
@@ -146,6 +158,28 @@ class CPU:
                 self.reg[self.sp] += 1
 
                 self.op_size = 0
+
+            elif IR == CMP:
+                self.alu(IR, operand_a, operand_b)
+                self.op_size = 3
+
+            elif IR == JMP:
+                self.pc = self.reg[operand_a]
+                self.op_size = 0
+
+            elif IR == JEQ:
+                if flag == 0b00000001:
+                    self.pc = self.reg[operand_a]
+                    self.op_size = 0
+                else:
+                    self.op_size = 2
+
+            elif IR == JNE:
+                if flag == 0b00000100:
+                    self.pc = self.reg[operand_a]
+                    self.op_size = 0
+                else:
+                    self.op_size = 2
 
             else:
                 print(f"Invalid Instructions: {IR}")
